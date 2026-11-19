@@ -1,15 +1,12 @@
 # nlite
 
 `nlite` is a Go background helper for controlling NEEWER GL1 Pro lights over
-Wi-Fi. It builds on [Chippi/neewer-gl1-pro-cli](https://github.com/Chippi/neewer-gl1-pro-cli)
-and retains the original TypeScript CLI below.
+Wi-Fi. It builds on [Chippi/neewer-gl1-pro-cli](https://github.com/Chippi/neewer-gl1-pro-cli).
 
 ## Go background helper (macOS)
 
-The Go implementation lives alongside the original TypeScript CLI, which is
-unchanged. It builds a standalone binary using only the Go standard library.
-No Node.js runtime, NEEWER Control Center, Stream Deck, or cloud account is needed
-to run the Go helper.
+`nlite` builds a standalone binary using only the Go standard library. No
+NEEWER Control Center, Stream Deck, or cloud account is needed to run it.
 
 The helper keeps a separate UDP session for each light, sends heartbeats, and
 accepts scene commands over a private Unix-domain socket. It does not expose a
@@ -37,9 +34,11 @@ IPs in your installed configuration. The configured scenes are:
 |---|---|---|
 | `video-calls` | On, 4300 K, 65% | On, 4300 K, 10% |
 | `evening-ambient` | On, 2900 K, 5% | Off |
+| `work` | On, 2900 K, 5% | On, 2900 K, 5% |
+| `sleep` | Off | Off |
 
-Use actual Kelvin values in Go configuration (`4300`, not the TypeScript CLI's
-`43`). On states require brightness 1-100 and temperature 2900-7000 K in
+Use actual Kelvin values in the configuration (for example, `4300`).
+On states require brightness 1-100 and temperature 2900-7000 K in
 100 K steps. Off states contain only `"power": "off"`. Unknown JSON fields,
 unknown lights, duplicate light IP addresses, and invalid ranges are rejected
 before the helper starts. Light addresses must be IPv4 literals.
@@ -206,6 +205,62 @@ The helper needs writable storage at `$HOME` to create its private command
 socket directory. If you use a read-only root filesystem, mount a volume
 writable by UID `65532` at `/home/nlite`.
 
+### Deploy to Kubernetes or k3s
+
+The [Deployment](deploy/nlite.yaml) runs one replica without host networking or
+a Service. It mounts `nlite-scenes` read-only at `/config` and uses an `emptyDir`
+for the Unix socket. It starts no second replica during an update.
+
+If you don't already have a local config, copy [the four-scene example](examples/scenes.json):
+
+```sh
+cp examples/scenes.json deploy/scenes.local.json
+```
+
+Replace the placeholder IPs in `deploy/scenes.local.json` with your light
+addresses. The file is Git-ignored. Generate the ConfigMap from it, then apply
+the Deployment in the same cluster and namespace:
+
+```sh
+kubectl create configmap nlite-scenes \
+  --from-file=scenes.json=deploy/scenes.local.json \
+  --dry-run=client -o yaml | kubectl apply -f -
+kubectl apply -f deploy/nlite.yaml
+kubectl rollout status deployment/nlite
+kubectl exec deploy/nlite -- /nlite status
+```
+
+Once you're ready to observe the lights, run
+`kubectl exec deploy/nlite -- /nlite scene video-calls`. You can substitute
+`evening-ambient`, `work`, or `sleep` for `video-calls`.
+If pod egress is masqueraded, the light may see a different source IP from the
+one in the handshake. A successful send does not prove that the light accepted
+the packet. After updating the ConfigMap, use `kubectl rollout restart deploy/nlite`
+to reload it.
+
+#### Trigger Kubernetes scenes from macOS Shortcuts
+
+Use one **Run Shell Script** action per scene. Call `kubectl` directly rather
+than relying on the terminal's shell aliases, environment, or active context:
+
+```sh
+/absolute/path/to/kubectl --kubeconfig "$HOME/.kube/homelab.yaml" \
+  --context homelab exec deploy/nlite -- /nlite scene video-calls
+```
+
+Replace the binary path, kubeconfig, and context for your setup; add
+`--namespace` before `exec` if needed. Use `evening-ambient`, `work`, or `sleep`
+in additional shortcuts. This uses existing Kubernetes credentials and requires
+access to the Kubernetes API, not a new port or token for `nlite`. For regular
+use, prefer credentials scoped to this workload over a cluster-admin config.
+
+One scene command already sends to its lights concurrently. Packets to the
+same light stay ordered and spaced apart. An off action has one scene packet;
+an on action sends power-on and then brightness/temperature. Independent
+session renewals and device processing can also make visible changes staggered.
+`status` reports each light's `last_scene_sent_at` for comparing send completion,
+not the time the light visibly changed.
+
 ### Go development checks
 
 ```sh
@@ -216,47 +271,6 @@ go build -o bin/neewer ./cmd/neewer
 
 Tests use local fake UDP servers and temporary Unix sockets only; they never
 contact the example light IPs or install/start a persistent service.
-
-## Getting started
-- Install Node.js https://nodejs.org
-- Clone the repository and navigate to the project directory.
-- Install dependencies with `npm install`.
-
-## Usage
-
-### Base command
-```
-npm run cli -- [options]
-```
-
-### Options
-```
--t <value>, --targetIp <value>      [Required] IP address of the Neewer GL1 Pro light to control.
---on                                Turn the light on.
---off                               Turn the light off.
--b <value>, --brightness <value>    Set the brightness level (1-100).
--k <value>, --kelvin <value>        Set the color temperature in Kelvin (29-70).
--y <value>, --yourIp <value>        Specify your IP address. If not set, the system will attempt to auto-detect it.
--q, --quiet                         Suppress all console.log outputs.
-```
-
-## Examples
-
-### Turn on the light
-```
-npm run cli -- --targetIp 192.168.1.123 --on
-```
-
-### Turn on the light, set brightness and color temperature
-When setting the brightness or color temperature, you must supply both values.
-```
-npm run cli -- --targetIp 192.168.1.123 --on --brightness 50 --kelvin 35
-```
-
-### Turn off the light
-```
-npm run cli -- --targetIp 192.168.1.123 --off
-```
 
 ## Acknowledgments
 Special thanks to [braintapper](https://github.com/braintapper/neewer-gl1) for the reverse engineering efforts done for Neewer GL1.

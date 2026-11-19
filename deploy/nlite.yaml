@@ -1,0 +1,51 @@
+apiVersion: apps/v1
+kind: Deployment
+metadata:
+  name: nlite
+spec:
+  replicas: 1
+  strategy:
+    type: Recreate
+  selector:
+    matchLabels:
+      app: nlite
+  template:
+    metadata:
+      labels:
+        app: nlite
+    spec:
+      automountServiceAccountToken: false
+      securityContext:
+        runAsNonRoot: true
+        runAsUser: 65532
+        runAsGroup: 65532
+        fsGroup: 65532
+        seccompProfile:
+          type: RuntimeDefault
+      containers:
+        - name: nlite
+          image: ghcr.io/ilush/nlite:v0.1.0
+          securityContext:
+            allowPrivilegeEscalation: false
+            readOnlyRootFilesystem: true
+            capabilities:
+              drop: ["ALL"]
+          readinessProbe:
+            exec:
+              command: ["/nlite", "status"]
+            timeoutSeconds: 5
+          volumeMounts:
+            - name: scenes
+              mountPath: /config
+              readOnly: true
+            - name: runtime
+              mountPath: /home/nlite
+      volumes:
+        - name: scenes
+          configMap:
+            name: nlite-scenes
+            items:
+              - key: scenes.json
+                path: scenes.json
+        - name: runtime
+          emptyDir: {}
