@@ -1,0 +1,7 @@
+**
+!Dockerfile
+!go.mod
+!cmd/
+!cmd/neewer/
+!cmd/neewer/*.go
+cmd/neewer/*_test.go

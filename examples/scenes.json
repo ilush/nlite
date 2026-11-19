@@ -1,0 +1,16 @@
+{
+  "lights": {
+    "left": "192.0.2.101",
+    "right": "192.0.2.102"
+  },
+  "scenes": {
+    "video-calls": {
+      "left": { "power": "on", "brightness": 65, "kelvin": 4300 },
+      "right": { "power": "on", "brightness": 10, "kelvin": 4300 }
+    },
+    "evening-ambient": {
+      "left": { "power": "on", "brightness": 5, "kelvin": 2900 },
+      "right": { "power": "off" }
+    }
+  }
+}
