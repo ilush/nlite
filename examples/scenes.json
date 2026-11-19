@@ -11,6 +11,14 @@
     "evening-ambient": {
       "left": { "power": "on", "brightness": 5, "kelvin": 2900 },
       "right": { "power": "off" }
+    },
+    "work": {
+      "left": { "power": "on", "brightness": 5, "kelvin": 2900 },
+      "right": { "power": "on", "brightness": 5, "kelvin": 2900 }
+    },
+    "sleep": {
+      "left": { "power": "off" },
+      "right": { "power": "off" }
     }
   }
 }

@@ -19,6 +19,14 @@ func TestExampleScenes(t *testing.T) {
 			"left":  {Power: "on", Brightness: 5, Kelvin: 2900},
 			"right": {Power: "off"},
 		},
+		"work": {
+			"left":  {Power: "on", Brightness: 5, Kelvin: 2900},
+			"right": {Power: "on", Brightness: 5, Kelvin: 2900},
+		},
+		"sleep": {
+			"left":  {Power: "off"},
+			"right": {Power: "off"},
+		},
 	}
 	for scene, states := range expected {
 		for light, state := range states {
