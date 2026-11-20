@@ -4,9 +4,9 @@ ARG TARGETOS
 ARG TARGETARCH
 WORKDIR /src
 COPY go.mod ./
-COPY cmd/neewer/ ./cmd/neewer/
+COPY cmd/nlite/ ./cmd/nlite/
 RUN CGO_ENABLED=0 GOOS="$TARGETOS" GOARCH="$TARGETARCH" \
-    go build -trimpath -ldflags="-s -w" -o /out/nlite ./cmd/neewer
+    go build -trimpath -ldflags="-s -w" -o /out/nlite ./cmd/nlite
 
 FROM alpine:3.23
 RUN addgroup -S -g 65532 nlite \

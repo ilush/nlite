@@ -195,7 +195,7 @@ func callHelper(ctx context.Context, socket, method, path string, body []byte, o
 	request.Header.Set("Content-Type", "application/json")
 	response, err := client.Do(request)
 	if err != nil {
-		return fmt.Errorf("helper request failed (is `neewer serve` running?): %w", err)
+		return fmt.Errorf("helper request failed (is `nlite serve` running?): %w", err)
 	}
 	defer response.Body.Close()
 	if _, err := io.Copy(output, response.Body); err != nil {
@@ -212,10 +212,10 @@ func run(ctx context.Context, args []string, output io.Writer) error {
 	if err != nil {
 		return err
 	}
-	flags := flag.NewFlagSet("neewer", flag.ContinueOnError)
+	flags := flag.NewFlagSet("nlite", flag.ContinueOnError)
 	socket := flags.String("socket", filepath.Join(home, ".neewer-gl1", "control.sock"), "absolute Unix socket path (before command)")
 	flags.Usage = func() {
-		fmt.Fprintln(flags.Output(), "Usage: neewer [--socket PATH] serve --config FILE | scene NAME | status")
+		fmt.Fprintln(flags.Output(), "Usage: nlite [--socket PATH] serve --config FILE | scene NAME | status")
 		flags.PrintDefaults()
 	}
 	if err := flags.Parse(args); err != nil {
@@ -237,7 +237,7 @@ func run(ctx context.Context, args []string, output io.Writer) error {
 			return err
 		}
 		if *config == "" || f.NArg() != 0 {
-			return errors.New("usage: neewer serve --config FILE")
+			return errors.New("usage: nlite serve --config FILE")
 		}
 		c, err := loadConfig(*config)
 		if err != nil {
@@ -246,7 +246,7 @@ func run(ctx context.Context, args []string, output io.Writer) error {
 		return serve(ctx, *socket, c)
 	case "scene":
 		if len(args) != 2 {
-			return errors.New("usage: neewer scene NAME")
+			return errors.New("usage: nlite scene NAME")
 		}
 		body, err := json.Marshal(struct {
 			Name string `json:"name"`
@@ -257,7 +257,7 @@ func run(ctx context.Context, args []string, output io.Writer) error {
 		return callHelper(ctx, *socket, http.MethodPost, "/scene", body, output)
 	case "status":
 		if len(args) != 1 {
-			return errors.New("usage: neewer status")
+			return errors.New("usage: nlite status")
 		}
 		return callHelper(ctx, *socket, http.MethodGet, "/status", nil, output)
 	default:

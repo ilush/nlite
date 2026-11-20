@@ -3,15 +3,15 @@
 <plist version="1.0">
 <dict>
     <key>Label</key>
-    <string>com.neewer.gl1-helper</string>
+    <string>com.nlite.helper</string>
     <key>ProgramArguments</key>
     <array>
-        <string>/Users/YOUR_USER/.local/bin/neewer</string>
+        <string>/Users/YOUR_USER/.local/bin/nlite</string>
         <string>--socket</string>
-        <string>/Users/YOUR_USER/.neewer-gl1/control.sock</string>
+        <string>/Users/YOUR_USER/.nlite/control.sock</string>
         <string>serve</string>
         <string>--config</string>
-        <string>/Users/YOUR_USER/.neewer-gl1/scenes.json</string>
+        <string>/Users/YOUR_USER/.nlite/scenes.json</string>
     </array>
     <key>RunAtLoad</key>
     <true/>
@@ -20,8 +20,8 @@
     <key>ThrottleInterval</key>
     <integer>10</integer>
     <key>StandardOutPath</key>
-    <string>/Users/YOUR_USER/Library/Logs/neewer-gl1.log</string>
+    <string>/Users/YOUR_USER/Library/Logs/nlite.log</string>
     <key>StandardErrorPath</key>
-    <string>/Users/YOUR_USER/Library/Logs/neewer-gl1.log</string>
+    <string>/Users/YOUR_USER/Library/Logs/nlite.log</string>
 </dict>
 </plist>

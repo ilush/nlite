@@ -20,10 +20,10 @@ error, preserving per-light results if a scene only partially sends.
 Install Go 1.22 or newer, then from this repository:
 
 ```sh
-go build -o bin/neewer ./cmd/neewer
-install -d -m 700 "$HOME/.local/bin" "$HOME/.neewer-gl1"
-install -m 755 bin/neewer "$HOME/.local/bin/neewer"
-install -m 600 examples/scenes.json "$HOME/.neewer-gl1/scenes.json"
+go build -o bin/nlite ./cmd/nlite
+install -d -m 700 "$HOME/.local/bin" "$HOME/.nlite"
+install -m 755 bin/nlite "$HOME/.local/bin/nlite"
+install -m 600 examples/scenes.json "$HOME/.nlite/scenes.json"
 ```
 
 **Replace the example addresses before trying a scene.** `examples/scenes.json`
@@ -53,22 +53,22 @@ Configuration is loaded on startup; restart the helper after editing it.
 Start the helper in a terminal (stop it with Control-C):
 
 ```sh
-"$HOME/.local/bin/neewer" serve --config "$HOME/.neewer-gl1/scenes.json"
+"$HOME/.local/bin/nlite" --socket "$HOME/.nlite/control.sock" serve --config "$HOME/.nlite/scenes.json"
 ```
 
 Starting it alone sends **no packets to the lights**. In a second terminal:
 
 ```sh
-"$HOME/.local/bin/neewer" scene video-calls
-"$HOME/.local/bin/neewer" scene evening-ambient
-"$HOME/.local/bin/neewer" status
+"$HOME/.local/bin/nlite" --socket "$HOME/.nlite/control.sock" scene video-calls
+"$HOME/.local/bin/nlite" --socket "$HOME/.nlite/control.sock" scene evening-ambient
+"$HOME/.local/bin/nlite" --socket "$HOME/.nlite/control.sock" status
 ```
 
 In macOS Shortcuts, create a shortcut with a **Run Shell Script** action and use
 the absolute installed binary path, replacing `YOUR_USER`:
 
 ```sh
-/Users/YOUR_USER/.local/bin/neewer scene video-calls
+/Users/YOUR_USER/.local/bin/nlite --socket /Users/YOUR_USER/.nlite/control.sock scene video-calls
 ```
 
 Use `scene evening-ambient` in the other shortcut. The helper must already be
@@ -83,14 +83,17 @@ transport error. These are not observations of the light's actual state.
 After a failed request, `last_request` can be newer than `last_scene_sent_at`.
 There is no reliable device-state acknowledgment in this implementation.
 
-The default socket is `$HOME/.neewer-gl1/control.sock`, with mode `0600` in a
-private `0700` directory. For a different location, pass an absolute path
-**before** the command on both helper and clients:
+The examples use `$HOME/.nlite/control.sock`, with mode `0600` in a private
+`0700` directory. Pass the same absolute socket path **before** the command on
+both helper and clients:
 
 ```sh
-neewer --socket /absolute/private/directory/control.sock serve --config /absolute/scenes.json
-neewer --socket /absolute/private/directory/control.sock scene video-calls
+nlite --socket /absolute/private/directory/control.sock serve --config /absolute/scenes.json
+nlite --socket /absolute/private/directory/control.sock scene video-calls
 ```
+
+For compatibility, omitting `--socket` still uses the original
+`$HOME/.neewer-gl1/control.sock`; existing helpers and clients can keep using it.
 
 Other processes running as your user can also issue commands. A lifetime file
 lock prevents duplicate helpers, and a refused stale socket is recovered after
@@ -101,11 +104,12 @@ never replaced.
 ### Start automatically with launchd
 
 Use a per-user LaunchAgent, not a root/system daemon. Stop any foreground helper
-first. Copy the example:
+first. If you have an older LaunchAgent installed, unload it before enabling this
+one so two helpers don't control the same lights. Copy the example:
 
 ```sh
 mkdir -p "$HOME/Library/LaunchAgents" "$HOME/Library/Logs"
-cp examples/com.neewer.gl1-helper.plist "$HOME/Library/LaunchAgents/"
+cp examples/com.nlite.helper.plist "$HOME/Library/LaunchAgents/"
 ```
 
 Edit the copied plist and replace **every** `/Users/YOUR_USER` with your actual
@@ -114,18 +118,18 @@ in `ProgramArguments`. Keep the socket path identical to the one your clients
 use. Then:
 
 ```sh
-plutil -lint "$HOME/Library/LaunchAgents/com.neewer.gl1-helper.plist"
-launchctl bootstrap "gui/$(id -u)" "$HOME/Library/LaunchAgents/com.neewer.gl1-helper.plist"
-launchctl print "gui/$(id -u)/com.neewer.gl1-helper"
+plutil -lint "$HOME/Library/LaunchAgents/com.nlite.helper.plist"
+launchctl bootstrap "gui/$(id -u)" "$HOME/Library/LaunchAgents/com.nlite.helper.plist"
+launchctl print "gui/$(id -u)/com.nlite.helper"
 ```
 
 This starts the helper now, at future logins, and restarts it if it exits.
 It does not run before you log in. Logs go to
-`$HOME/Library/Logs/neewer-gl1.log`; rotate or remove old logs as needed.
+`$HOME/Library/Logs/nlite.log`; rotate or remove old logs as needed.
 To stop/unload it, or before reloading edited configuration:
 
 ```sh
-launchctl bootout "gui/$(id -u)" "$HOME/Library/LaunchAgents/com.neewer.gl1-helper.plist"
+launchctl bootout "gui/$(id -u)" "$HOME/Library/LaunchAgents/com.nlite.helper.plist"
 ```
 
 Run the `bootstrap` command again to reload. SIGTERM/Control-C cancels pending
@@ -266,7 +270,7 @@ not the time the light visibly changed.
 ```sh
 go test -race ./...
 go vet ./...
-go build -o bin/neewer ./cmd/neewer
+go build -o bin/nlite ./cmd/nlite
 ```
 
 Tests use local fake UDP servers and temporary Unix sockets only; they never
